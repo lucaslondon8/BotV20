@@ -3,22 +3,27 @@ SmartContract that executes triangular arbitrage with flash loans from Aave and 
 several DEX routers. JavaScript utilities are provided to discover profitable paths, simulate
 potential profits, and watch the mempool for opportunities.
 
-Project Structure
+## Project Structure
 
 .
-├── contracts/                 # Solidity contracts
-│   ├── SmartContract.sol      # Main arbitrage contract
-│   ├── IUniswapV2Router02.sol # Router interface
-│   └── Lock.sol               # Sample contract (with tests)
-├── scripts/
-│   └── deploy.js              # Hardhat deployment script
-├── scanner.js                 # Main bot logic
-├── pathfinder.js              # Builds token graphs & arbitrage paths
-├── simulate.js                # Simulates arbitrage profitability
-├── utils.js                   # Helper functions for reserve data
-├── config.js                  # Runtime configuration
-├── test/                      # Hardhat tests for Lock.sol
-└── ignition/modules/          # Hardhat Ignition deployment module
+├── contracts/                # Solidity contracts
+│   ├── SmartContract.sol     # Main arbitrage contract
+│   ├── IUniswapV2Router02.sol# Uniswap V2 router interface
+│   └── Lock.sol              # Sample contract (with tests)
+├── scripts/                  # Hardhat/JS helpers
+│   ├── deploy.js             # Deployment script
+│   ├── scanner.js            # Main bot logic
+│   ├── pathfinder.js         # Builds token graphs & arbitrage paths
+│   ├── simulate.js           # Simulates arbitrage profitability
+│   ├── utils.js              # Reserve-data helpers
+│   └── config.js             # Runtime configuration
+├── test/                     # Hardhat tests for Lock.sol
+└── ignition/
+    └── modules/              # Hardhat Ignition deployment module
+
+# (Add your “Requirements” section here if you’d like it to follow the tree)
+
+
 Requirements
 
 Node.js (version 14 or higher)
