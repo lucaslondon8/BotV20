@@ -179,5 +179,3 @@ Pull requests are welcome. Please:
 ## License
 
 This project is released under the **MIT License**.
-
->>>>>>> 5bf2591 (Add detailed BotV20 README)
