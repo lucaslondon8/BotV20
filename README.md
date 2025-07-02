@@ -6,23 +6,20 @@ potential profits, and watch the mempool for opportunities.
 ## Project Structure
 
 .
-├── contracts/                # Solidity contracts
-│   ├── SmartContract.sol     # Main arbitrage contract
-│   ├── IUniswapV2Router02.sol# Uniswap V2 router interface
-│   └── Lock.sol              # Sample contract (with tests)
-├── scripts/                  # Hardhat/JS helpers
-│   ├── deploy.js             # Deployment script
-│   ├── scanner.js            # Main bot logic
-│   ├── pathfinder.js         # Builds token graphs & arbitrage paths
-│   ├── simulate.js           # Simulates arbitrage profitability
-│   ├── utils.js              # Reserve-data helpers
-│   └── config.js             # Runtime configuration
-├── test/                     # Hardhat tests for Lock.sol
+├── contracts/                     # Solidity contracts
+│   ├── SmartContract.sol          # Main arbitrage contract
+│   ├── IUniswapV2Router02.sol     # Uniswap V2 router interface
+│   └── Lock.sol                   # Sample contract (with tests)
+├── scripts/                       # Hardhat/JS helpers
+│   ├── deploy.js                  # Deployment script
+│   ├── scanner.js                 # Main bot logic
+│   ├── pathfinder.js              # Builds token graphs & arbitrage paths
+│   ├── simulate.js                # Simulates arbitrage profitability
+│   ├── utils.js                   # Reserve-data helpers
+│   └── config.js                  # Runtime configuration
+├── test/                          # Hardhat tests for Lock.sol
 └── ignition/
-    └── modules/              # Hardhat Ignition deployment module
-
-# (Add your “Requirements” section here if you’d like it to follow the tree)
-
+    └── modules/                   # Hardhat Ignition deployment module
 
 Requirements
 
