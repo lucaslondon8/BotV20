@@ -40,6 +40,7 @@ Running the Bot
 
 Start the arbitrage scanner:
 
+vv
 node scanner.js
 The script connects to the Polygon network via WebSocket, constructs and caches
 profitable triangular paths, monitors DEX transactions in the mempool, and simulates
