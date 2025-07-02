@@ -1,10 +1,10 @@
-BotV20 is an arbitrage bot for the Polygon network built using Hardhat. It uses an on-chain
-SmartContract that executes triangular arbitrage with flash loans from Aave and swaps through
-several DEX routers. JavaScript utilities are provided to discover profitable paths, simulate
-potential profits, and watch the mempool for opportunities.
+# BotV20
 
-Project Structure
+BotV20 is an arbitrage bot for the Polygon network built with Hardhat. It uses an on-chain **SmartContract** that executes triangular arbitrage with flash loans from Aave and swaps through several DEX routers. JavaScript utilities are provided to discover profitable paths, simulate potential profits, and watch the mempool for opportunities.
 
+## Project Structure
+
+```
 .
 ├── contracts/                 # Solidity contracts
 │   ├── SmartContract.sol      # Main arbitrage contract
@@ -19,46 +19,61 @@ Project Structure
 ├── config.js                  # Runtime configuration
 ├── test/                      # Hardhat tests for Lock.sol
 └── ignition/modules/          # Hardhat Ignition deployment module
-Requirements
+```
 
-Node.js (version 14 or higher)
-Hardhat and its toolbox
-Access to an RPC/WebSocket endpoint for Polygon (Alchemy recommended)
-Setup
+## Requirements
 
-Install dependencies
-npm install
-Create a .env file
-ALCHEMY_KEY=<Polygon RPC URL>
-POLYGON_WS_URL=<WebSocket URL for mempool monitoring>
-PRIVATE_KEY=<private key of the deploying/trading wallet>
-ALCHEMY_GAS_MANAGER_KEY=<optional – gas manager API key>
-Deploy the contract
-npx hardhat run scripts/deploy.js --network polygon
-Record the contract address and update config.js if necessary.
-Running the Bot
+- Node.js (version 14 or higher)
+- Hardhat and its toolbox
+- Access to an RPC/WebSocket endpoint for Polygon (Alchemy recommended)
+
+## Setup
+
+1. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+2. **Create a `.env` file**
+
+   ```
+   ALCHEMY_KEY=<Polygon RPC URL>
+   POLYGON_WS_URL=<WebSocket URL for mempool monitoring>
+   PRIVATE_KEY=<private key of the deploying/trading wallet>
+   ALCHEMY_GAS_MANAGER_KEY=<optional – gas manager API key>
+   ```
+
+3. **Deploy the contract**
+
+   ```bash
+   npx hardhat run scripts/deploy.js --network polygon
+   ```
+
+4. Record the contract address and update `config.js` if necessary.
+
+## Running the Bot
 
 Start the arbitrage scanner:
 
-vv
+```bash
 node scanner.js
-The script connects to the Polygon network via WebSocket, constructs and caches
-profitable triangular paths, monitors DEX transactions in the mempool, and simulates
-arbitrage. By default, actual trade execution is disabled—uncomment the relevant
-section in scanner.js once you are confident in the configuration.
+```
 
-Testing
+The script connects to the Polygon network via WebSocket, constructs and caches profitable triangular paths, monitors DEX transactions in the mempool, and simulates arbitrage. By default, actual trade execution is disabled—uncomment the relevant section in `scanner.js` once you are confident in the configuration.
 
-The repository includes Hardhat tests for the sample Lock contract:
+## Testing
 
+The repository includes Hardhat tests for the sample `Lock` contract:
+
+```bash
 npx hardhat test
-Important Notes
+```
 
-Flash Loans: The SmartContract uses Aave V3 flash loans. Ensure your
-configuration and allowances are correct before enabling live trades.
-Configuration: Profit thresholds, slippage tolerances, whitelisted tokens, and other
-options are defined in config.js.
-Gas Management: If using Alchemy Gas Manager, set ALCHEMY_GAS_MANAGER_KEY
-in your environment variables.
-Use this project at your own risk. Always test thoroughly on a forked or test network
-before deploying to mainnet.
+## Important Notes
+
+- **Flash Loans:** The SmartContract uses Aave V3 flash loans. Ensure your configuration and allowances are correct before enabling live trades.
+- **Configuration:** Profit thresholds, slippage tolerances, whitelisted tokens, and other options are defined in `config.js`.
+- **Gas Management:** If using Alchemy Gas Manager, set `ALCHEMY_GAS_MANAGER_KEY` in your environment variables.
+- Use this project at your own risk. Always test thoroughly on a forked or test network before deploying to mainnet.
+
