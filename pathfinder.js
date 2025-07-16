@@ -82,109 +82,108 @@ async function buildTokenGraph() {
   return graph;
 }
 
-// Find all triangular arbitrage paths starting from a token
-function findTriangularPaths(graph, startToken, maxPaths = 20) {
-  const paths = [];
-  
-  // Get all neighbors of start token
-  const firstHops = graph.getNeighbors(startToken);
-  if (!firstHops) return paths;
-  
-  for (const [secondToken, dexes1] of firstHops) {
-    const secondHops = graph.getNeighbors(secondToken);
-    if (!secondHops) continue;
-    
-    for (const [thirdToken, dexes2] of secondHops) {
-      if (thirdToken === startToken) continue; // Skip 2-hop cycles
-      
-      const thirdHops = graph.getNeighbors(thirdToken);
-      if (!thirdHops) continue;
-      
-      // Check if we can get back to start token
-      const returnDexes = thirdHops.get(startToken);
-      if (returnDexes) {
-        // We found a triangular path!
-        for (const dex1 of dexes1) {
-          for (const dex2 of dexes2) {
-            for (const dex3 of returnDexes) {
-              paths.push({
-                tokens: [startToken, secondToken, thirdToken, startToken],
-                dexes: [dex1, dex2, dex3],
-                path1: [startToken, secondToken],
-                path2: [secondToken, thirdToken],
-                path3: [thirdToken, startToken]
-              });
-              
-              if (paths.length >= maxPaths) return paths;
+function findPaths(graph, startToken, maxHops = 3, maxPaths = 20) {
+    const paths = [];
+    const queue = [[startToken, [], []]]; // [token, path_so_far, dexes_so_far]
+
+    while (queue.length > 0) {
+        const [currentToken, currentPath, currentDexes] = queue.shift();
+
+        if (currentPath.length >= maxHops) continue;
+
+        const neighbors = graph.getNeighbors(currentToken);
+        if (!neighbors) continue;
+
+        for (const [nextToken, dexes] of neighbors) {
+            if (nextToken === startToken) {
+                // Found a cycle
+                for (const dex of dexes) {
+                    const newPath = [...currentPath, currentToken, nextToken];
+                    const newDexes = [...currentDexes, dex];
+                    const pathObject = {
+                        tokens: newPath,
+                        dexes: newDexes,
+                    };
+                    for (let i = 0; i < newPath.length - 1; i++) {
+                        pathObject[`path${i + 1}`] = [newPath[i], newPath[i + 1]];
+                    }
+                    paths.push(pathObject);
+                    if (paths.length >= maxPaths) return paths;
+                }
+            } else if (!currentPath.includes(nextToken)) {
+                // Continue exploring
+                for (const dex of dexes) {
+                    const newPath = [...currentPath, currentToken];
+                    const newDexes = [...currentDexes, dex];
+                    queue.push([nextToken, newPath, newDexes]);
+                }
             }
-          }
         }
-      }
     }
-  }
-  
-  return paths;
+
+    return paths;
 }
 
 // Find paths with highest liquidity (best reserves)
 async function rankPathsByLiquidity(paths) {
-  const pathsWithLiquidity = [];
-  
-  for (const path of paths) {
-    try {
-      let totalLiquidity = 0n;
-      
-      // Calculate total liquidity across all hops
-      for (let i = 0; i < 3; i++) {
-        const hopPath = i === 0 ? path.path1 : i === 1 ? path.path2 : path.path3;
-        const reserves = await getReserves(hopPath);
-        if (reserves) {
-          // Use geometric mean of reserves as liquidity metric
-          totalLiquidity += BigInt(Math.sqrt(Number(reserves[0]) * Number(reserves[1])));
+    const pathsWithLiquidity = [];
+
+    for (const path of paths) {
+        try {
+            let totalLiquidity = 0n;
+
+            // Calculate total liquidity across all hops
+            for (let i = 0; i < path.tokens.length - 1; i++) {
+                const hopPath = path[`path${i + 1}`];
+                const reserves = await getReserves(hopPath);
+                if (reserves) {
+                    // Use geometric mean of reserves as liquidity metric
+                    totalLiquidity += BigInt(Math.sqrt(Number(reserves[0]) * Number(reserves[1])));
+                }
+            }
+
+            pathsWithLiquidity.push({
+                ...path,
+                liquidity: totalLiquidity,
+            });
+        } catch (err) {
+            console.error("Error calculating liquidity:", err);
         }
-      }
-      
-      pathsWithLiquidity.push({
-        ...path,
-        liquidity: totalLiquidity
-      });
-    } catch (err) {
-      console.error("Error calculating liquidity:", err);
     }
-  }
-  
-  // Sort by liquidity (highest first)
-  return pathsWithLiquidity.sort((a, b) => {
-    if (a.liquidity > b.liquidity) return -1;
-    if (a.liquidity < b.liquidity) return 1;
-    return 0;
-  });
+
+    // Sort by liquidity (highest first)
+    return pathsWithLiquidity.sort((a, b) => {
+        if (a.liquidity > b.liquidity) return -1;
+        if (a.liquidity < b.liquidity) return 1;
+        return 0;
+    });
 }
+
 
 // Main function to find best arbitrage opportunities
 async function findBestArbitragePaths(targetTokens = null) {
-  // Build the token graph
-  const graph = await buildTokenGraph();
-  
-  // Use provided tokens or default to high-liquidity ones
-  const tokensToCheck = targetTokens || [TOKENS.USDC, TOKENS.WETH, TOKENS.WMATIC];
-  
-  let allPaths = [];
-  
-  // Find triangular paths for each target token
-  for (const token of tokensToCheck) {
-    console.log(`🔎 Finding paths for ${getTokenSymbol(token)}...`);
-    const paths = findTriangularPaths(graph, token);
-    allPaths = allPaths.concat(paths);
-  }
-  
-  console.log(`📊 Found ${allPaths.length} total paths`);
-  
-  // Rank paths by liquidity
-  const rankedPaths = await rankPathsByLiquidity(allPaths);
-  
-  // Return top paths
-  return rankedPaths.slice(0, 10);
+    // Build the token graph
+    const graph = await buildTokenGraph();
+
+    // Use provided tokens or default to high-liquidity ones
+    const tokensToCheck = targetTokens || [TOKENS.USDC, TOKENS.WETH, TOKENS.WMATIC];
+
+    let allPaths = [];
+
+    // Find paths for each target token
+    for (const token of tokensToCheck) {
+        console.log(`🔎 Finding paths for ${getTokenSymbol(token)}...`);
+        const paths = findPaths(graph, token, 5); // Find paths with up to 5 hops
+        allPaths = allPaths.concat(paths);
+    }
+
+    console.log(`📊 Found ${allPaths.length} total paths`);
+
+    // Rank paths by liquidity
+    const rankedPaths = await rankPathsByLiquidity(allPaths);
+
+    // Return top paths
+    return rankedPaths.slice(0, 10);
 }
 
 // Helper to get token symbol
@@ -199,18 +198,24 @@ function getTokenSymbol(address) {
 
 // Format path for display
 function formatPath(path) {
-  const tokens = path.tokens.map(t => getTokenSymbol(t));
-  const dexes = path.dexes.map(d => d.name);
-  
-  return `${tokens[0]} → ${tokens[1]} (${dexes[0]}) → ${tokens[2]} (${dexes[1]}) → ${tokens[3]} (${dexes[2]})`;
+    const tokens = path.tokens.map(t => getTokenSymbol(t));
+    const dexes = path.dexes.map(d => d.name);
+    let pathStr = "";
+    for (let i = 0; i < tokens.length - 1; i++) {
+        pathStr += `${tokens[i]} → ${tokens[i + 1]} (${dexes[i]})`;
+        if (i < tokens.length - 2) {
+            pathStr += " → ";
+        }
+    }
+    return pathStr;
 }
 
 // Export for use in scanner
 module.exports = {
-  findBestArbitragePaths,
-  formatPath,
-  buildTokenGraph,
-  findTriangularPaths,
-  TOKENS,
-  ROUTERS
+    findBestArbitragePaths,
+    formatPath,
+    buildTokenGraph,
+    findPaths,
+    TOKENS,
+    ROUTERS
 };

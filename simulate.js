@@ -59,32 +59,13 @@ async function simulateArbitrage({ tokenA, path1, path2, path3 }) {
       reserves.push(r);
     }
 
-    // 🚀 3. Simulate flash loan sizes from $1k to $100k
-    const simulations = [];
-    for (let usd = 1000; usd <= 100000; usd += 1000) {
-      const amount = ethers.parseUnits(usd.toString(), decimals);
-      simulations.push(simulateProfitWithAmount(amount, reserves));
-    }
-
-    const results = await Promise.allSettled(simulations);
-
-    // 📈 4. Find most profitable option
-    let bestProfit = 0n;
-    let bestAmount = 0n;
-    let bestOuts = [0n, 0n, 0n];
-
-    for (const res of results) {
-      if (res.status === "fulfilled" && res.value && res.value.profit > bestProfit) {
-        bestProfit = res.value.profit;
-        bestAmount = res.value.input;
-        bestOuts = res.value.outs;
-      }
-    }
+    // 🚀 3. Find optimal loan amount using golden-section search
+    const { optimalLoanAmount, profit, minOuts } = await findOptimalLoanAmount(reserves, decimals);
 
     return {
-      profit: bestProfit,
-      optimalLoanAmount: bestAmount,
-      minOuts: bestOuts.map(v => (v * 97n) / 100n) // 3% slippage buffer
+      profit,
+      optimalLoanAmount,
+      minOuts: minOuts.map(v => (v * 97n) / 100n) // 3% slippage buffer
     };
   } catch (err) {
     console.error("❌ Simulation failed:", err.message);
@@ -118,5 +99,42 @@ function getAmountOut(amountIn, reserveIn, reserveOut) {
   const denominator = reserveIn * 1000n + amountInWithFee;
   return numerator / denominator;
 }
+
+async function findOptimalLoanAmount(reserves, decimals) {
+    const profitFunction = async (amount) => {
+        const result = await simulateProfitWithAmount(amount, reserves);
+        return result.profit;
+    };
+
+    const min = ethers.parseUnits("1", decimals);
+    const max = ethers.parseUnits("1000000", decimals);
+    const optimalLoanAmount = await goldenSectionSearch(profitFunction, min, max, 100);
+
+    const { profit, outs } = await simulateProfitWithAmount(optimalLoanAmount, reserves);
+
+    return {
+        optimalLoanAmount,
+        profit,
+        minOuts: outs,
+    };
+}
+
+async function goldenSectionSearch(f, a, b, n) {
+    const gr = (Math.sqrt(5) + 1) / 2;
+    let c = b - (b - a) / gr;
+    let d = a + (b - a) / gr;
+    while (n > 0) {
+        if (await f(c) > await f(d)) {
+            b = d;
+        } else {
+            a = c;
+        }
+        c = b - (b - a) / gr;
+        d = a + (b - a) / gr;
+        n--;
+    }
+    return (b + a) / 2n;
+}
+
 
 module.exports = { simulateArbitrage };
